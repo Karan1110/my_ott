@@ -3,7 +3,7 @@ const {Rental} = require('../../models/rental');
 const request = require('supertest');
 const {  mongoose } = require('mongoose');
 const { Movie } = require('../../models/movie');
-
+const moment = require("moment");
 
 describe("POST:/api/returns",()=>{
     let server;
@@ -12,7 +12,12 @@ describe("POST:/api/returns",()=>{
     let customer;
     let movieId;
     let customerId;
-
+    const exec = async ()=>{
+        return await request(server)
+        .set('x-auth-token',token)
+        .post("/api/returns")
+        .send({movieId,customerId});
+    };
     beforeEach(async()=>{
         server = require("../../index");
          token = new User().generateAuthToken();
@@ -20,19 +25,7 @@ describe("POST:/api/returns",()=>{
          movieId = mongoose.Types.ObjectId();
          customerId = mongoose.Types.ObjectId();
         
-        const exec = async ()=>{
-            await request(server)
-            .set('x-auth-token',token)
-            .post("/api/returns")
-            .send({movieId,customerId});
-        };
-        customer = new Customer({
-            _id:customerId,
-            name:"someone",
-            isGold:true,
-            phone:"1234567890"
-        });
-        await customer.save();
+        
         movie = new Movie({
             _id: movieId,
             title: '12345',
@@ -41,7 +34,6 @@ describe("POST:/api/returns",()=>{
             numberInStock: 10 
           });
           await movie.save();
-      
           rental = new Rental({
             customer: {
               _id: customerId,
@@ -57,9 +49,9 @@ describe("POST:/api/returns",()=>{
           await rental.save();
         });
 
-        afterEach(()=>{
-            server.close();
-            Rental.remove({});
+        afterEach(async ()=>{
+            await server.close();
+            await Rental.remove({});
         })
     
     it("should return 401 if user is not logged in",async()=>{
@@ -118,8 +110,25 @@ it("should 400 customerId or movieId is invalid",async()=>{
 it("should return valid and truthy values",async()=>{
     rental.dateOut = moment.add(-7,days).toDate();
     await rental.save();
-    const res = await exec();
     const rentalInDb = await rental.findById(rental._id);
+    const res = await exec();
     expect(rentalInDb.rentalFee).toBe(14);
 })
+it("should return valid and truthy values",async()=>{
+    const res = await exec();
+    const rentalInDb = rental.findById(rental._id);
+    const diff = new Date()-rentalInDb.dateReturned;
+    expect(diff).toBeLessThan(10*1000);
+})
+it("increase",async()=>{
+    
+const movieInDb = await movie.findById(movie._id);
+    const res = await exec();
+    expect(movieInDb.numberInStock).toBe(movie.numberInStock+1);
+})
+it("increase",async()=>{
+        const res = await exec();
+        expect(Object.keys(res.body)).toEqual(expect.arrayContaining(['dateOut', 'dateReturned', 'rentalFee',
+        'customer', 'movie']));
+    })
     });

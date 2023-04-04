@@ -1,0 +1,25 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: windows-10
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Run tests
+      run: npm test
+
+  deploy:
+    runs-on: windows-10
+
+    needs: [build]
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Deploy to staging
+      run: |
+        ssh user@staging.example.com "cd /var/www && git pull && npm install && pm2 restart myapp"
