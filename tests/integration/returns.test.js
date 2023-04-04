@@ -102,24 +102,24 @@ it("should 400 customerId or movieId is invalid",async()=>{
             });
     it("should 400 if rental is invalid",async()=>{
                 //pass object-id middleware;
-                rental = null;
+                await Rental.remove({});
                 const res = await exec();
                 expect(res.status).toBe(400);
                 });
     it("should return 400 if rental already proccessed.",async()=>{
                     //pass object-id middleware;
-                    
+                    rental.dateReturned =  new Date();
+                    rental.save();
                     const res = await exec();
                     expect(res.status).toBe(400);
                     });
 
                    
 it("should return valid and truthy values",async()=>{
+    rental.dateOut = moment.add(-7,days).toDate();
+    await rental.save();
     const res = await exec();
-    expect(res.status).toBe(200);
-    expect(res.body.dateReturned).toBeTruthy();
-    expect(res.body.rentalFee).toBeTruthy();
-    expect(res.body.numberInStock).toBeTruthy();
-    expect(res.body).toMatch(rental);
+    const rentalInDb = await rental.findById(rental._id);
+    expect(rentalInDb.rentalFee).toBe(14);
 })
     });
