@@ -21,5 +21,4 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: Deploy to staging
-      run: |
-        ssh user@staging.example.com "cd /var/www && git pull && npm install && pm2 restart myapp"
+      run: 
